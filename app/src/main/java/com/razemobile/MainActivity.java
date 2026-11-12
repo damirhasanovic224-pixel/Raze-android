@@ -2,6 +2,7 @@ package com.razemobile;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.Gravity;
@@ -20,11 +21,17 @@ import java.io.OutputStream;
 public class MainActivity extends Activity {
     private static final int PICK_SWF = 1;
     private int pendingSlot = 2;
+    private static final String[] RENDERERS = {"auto", "webgl", "wgpu-webgl", "canvas"};
+    private Button rendererBtn;
+    private SharedPreferences prefs;
+
+    private String renderer() { return prefs.getString("renderer", "auto"); }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        prefs = getSharedPreferences("raze", MODE_PRIVATE);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setGravity(Gravity.CENTER);
@@ -33,6 +40,16 @@ public class MainActivity extends Activity {
 
         root.addView(makeButton(2));
         root.addView(makeButton(3));
+
+        rendererBtn = new Button(this);
+        rendererBtn.setText("Graphics: " + renderer());
+        rendererBtn.setOnClickListener(v -> {
+            int i = java.util.Arrays.asList(RENDERERS).indexOf(renderer());
+            String next = RENDERERS[(i + 1) % RENDERERS.length];
+            prefs.edit().putString("renderer", next).apply();
+            rendererBtn.setText("Graphics: " + next);
+        });
+        root.addView(rendererBtn);
 
         TextView hint = new TextView(this);
         hint.setText("Tap to play. On first run you pick the SWF file.\nLong-press to choose a different file.");
@@ -79,6 +96,7 @@ public class MainActivity extends Activity {
     private void play(int slot) {
         Intent i = new Intent(this, GameActivity.class);
         i.putExtra("slot", slot);
+        i.putExtra("renderer", renderer());
         startActivity(i);
     }
 

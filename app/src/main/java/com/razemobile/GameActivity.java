@@ -33,6 +33,8 @@ public class GameActivity extends Activity {
         }
 
         int slot = getIntent().getIntExtra("slot", 2);
+        String renderer = getIntent().getStringExtra("renderer");
+        if (renderer == null) renderer = "auto";
         File swfDir = new File(getFilesDir(), "swf");
         swfDir.mkdirs();
 
@@ -68,7 +70,7 @@ public class GameActivity extends Activity {
         });
 
         setContentView(web);
-        web.loadUrl("https://appassets.androidplatform.net/assets/index.html?swf=/swf/raze" + slot + ".swf");
+        web.loadUrl("https://appassets.androidplatform.net/assets/index.html?swf=/swf/raze" + slot + ".swf&renderer=" + renderer);
     }
 
     @SuppressWarnings("deprecation")
