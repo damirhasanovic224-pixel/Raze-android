@@ -92,6 +92,15 @@ public class GameActivity extends Activity {
                 return new WebResourceResponse("text/plain", "utf-8", 204, "No Content", cors,
                         new ByteArrayInputStream(new byte[0]));
             }
+            String host = req.getUrl().getHost();
+            if (host != null && host.endsWith("playtomic.com")) {
+                // Playtomic shut down. Give the game a well-formed "request failed" answer so it
+                // carries on instead of waiting forever for a reply that never comes.
+                String xml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+                        + "<data><status>0</status><errorcode>1</errorcode></data>";
+                return new WebResourceResponse("text/xml", "utf-8", 200, "OK", cors,
+                        new ByteArrayInputStream(xml.getBytes("UTF-8")));
+            }
             if (!"GET".equals(method)) return null; // POST bodies aren't visible here; let WebView handle it
             HttpURLConnection c = (HttpURLConnection) new URL(req.getUrl().toString()).openConnection();
             c.setConnectTimeout(8000);

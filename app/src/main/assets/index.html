@@ -52,8 +52,14 @@
   .btn.on { background: var(--hot); }
   .btn b { font-size: 18px; font-weight: 700; }
 
+  #logBtn {
+    position: fixed; left: 6px; top: 6px; width: 28px; height: 28px; z-index: 6;
+    border-radius: 50%; background: rgba(255,255,255,.12); color: rgba(255,255,255,.6);
+    font: 700 14px/28px system-ui, sans-serif; text-align: center; touch-action: none;
+  }
   #log {
-    position: fixed; left: 6px; top: 6px; right: 28%; z-index: 5; pointer-events: none;
+    display: none; background: rgba(0,0,0,.6);
+    position: fixed; left: 6px; top: 40px; right: 28%; z-index: 5; pointer-events: none;
     color: #8f8; font: 10px/1.3 monospace; white-space: pre-wrap; text-shadow: 0 0 2px #000;
   }
   #msg {
@@ -108,6 +114,7 @@
   <div class="stick" id="moveStick"><div class="knob"></div></div>
   <div class="stick" id="aimStick"><div class="knob"></div></div>
 </div>
+<div id="logBtn">i</div>
 <div id="log"></div>
 <div id="msg"></div>
 
@@ -258,6 +265,13 @@ makeButton(document.getElementById('btnSwap'), () => {
   swapIdx = (swapIdx + 1) % CONFIG.swapKeys.length;
   tap(CONFIG.swapKeys[swapIdx]);
   showWeapon();
+});
+
+/* ---- log toggle (tap the small i in the top-left corner) ---- */
+document.getElementById('logBtn').addEventListener('pointerdown', e => {
+  e.preventDefault();
+  const l = document.getElementById('log');
+  l.style.display = l.style.display === 'block' ? 'none' : 'block';
 });
 
 /* ---- start Ruffle ---- */
