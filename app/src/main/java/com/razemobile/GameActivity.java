@@ -16,7 +16,13 @@ import android.webkit.WebViewClient;
 
 import androidx.webkit.WebViewAssetLoader;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
 public class GameActivity extends Activity {
     private WebView web;
@@ -59,6 +65,7 @@ public class GameActivity extends Activity {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
+                if (!"appassets.androidplatform.net".equals(uri.getHost())) return proxy(request);
                 WebResourceResponse res = loader.shouldInterceptRequest(uri);
                 String p = uri.getPath();
                 if (res != null && p != null) {
@@ -71,6 +78,48 @@ public class GameActivity extends Activity {
 
         setContentView(web);
         web.loadUrl("https://appassets.androidplatform.net/assets/index.html?swf=/swf/raze" + slot + ".swf&renderer=" + renderer);
+    }
+
+    /** Fetch outside URLs natively and add CORS headers so Ruffle is allowed to read them. */
+    private WebResourceResponse proxy(WebResourceRequest req) {
+        Map<String, String> cors = new HashMap<>();
+        cors.put("Access-Control-Allow-Origin", "*");
+        cors.put("Access-Control-Allow-Headers", "*");
+        cors.put("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        String method = req.getMethod();
+        try {
+            if ("OPTIONS".equals(method)) {
+                return new WebResourceResponse("text/plain", "utf-8", 204, "No Content", cors,
+                        new ByteArrayInputStream(new byte[0]));
+            }
+            if (!"GET".equals(method)) return null; // POST bodies aren't visible here; let WebView handle it
+            HttpURLConnection c = (HttpURLConnection) new URL(req.getUrl().toString()).openConnection();
+            c.setConnectTimeout(8000);
+            c.setReadTimeout(15000);
+            c.setInstanceFollowRedirects(true);
+            String ua = req.getRequestHeaders().get("User-Agent");
+            if (ua != null) c.setRequestProperty("User-Agent", ua);
+            int code = c.getResponseCode();
+            InputStream in = code >= 400 ? c.getErrorStream() : c.getInputStream();
+            if (in == null) in = new ByteArrayInputStream(new byte[0]);
+            String type = c.getContentType();
+            String mime = "application/octet-stream";
+            String enc = null;
+            if (type != null) {
+                String[] parts = type.split(";");
+                mime = parts[0].trim();
+                for (String part : parts) {
+                    part = part.trim();
+                    if (part.toLowerCase().startsWith("charset=")) enc = part.substring(8);
+                }
+            }
+            String reason = c.getResponseMessage();
+            if (reason == null || reason.isEmpty()) reason = "OK";
+            return new WebResourceResponse(mime, enc, code, reason, cors, in);
+        } catch (Exception e) {
+            return new WebResourceResponse("text/plain", "utf-8", 502, "Bad Gateway", cors,
+                    new ByteArrayInputStream(new byte[0]));
+        }
     }
 
     @SuppressWarnings("deprecation")
