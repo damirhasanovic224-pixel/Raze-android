@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      ruffle_version:
+        description: 'Ruffle npm version (leave blank for latest)'
+        required: false
+        default: ''
 
 jobs:
   build:
@@ -21,11 +26,13 @@ jobs:
           node-version: '20'
 
       - name: Fetch Ruffle (self-hosted web build)
+        env:
+          RUFFLE_VERSION: ${{ inputs.ruffle_version }}
         run: |
           DEST="$GITHUB_WORKSPACE/app/src/main/assets/ruffle"
           mkdir -p "$DEST"
           cd "$(mktemp -d)"
-          npm pack @ruffle-rs/ruffle
+          npm pack "@ruffle-rs/ruffle@${RUFFLE_VERSION:-latest}"
           tar -xzf ./*.tgz
           RJS="$(find package -name ruffle.js | head -1)"
           test -n "$RJS" || { echo "ruffle.js not found in package"; exit 1; }

@@ -62,6 +62,10 @@
     position: fixed; left: 6px; top: 40px; right: 28%; z-index: 5; pointer-events: none;
     color: #8f8; font: 10px/1.3 monospace; white-space: pre-wrap; text-shadow: 0 0 2px #000;
   }
+  #xhair {
+    position: fixed; width: 22px; height: 22px; margin: -11px 0 0 -11px; z-index: 4;
+    border: 2px solid rgba(255,70,70,.9); border-radius: 50%; pointer-events: none; display: none;
+  }
   #msg {
     position: fixed; left: 8vw; right: 8vw; top: 10vh; display: none;
     color: #fff; background: rgba(160,30,30,.9); padding: 12px 16px;
@@ -114,6 +118,7 @@
   <div class="stick" id="moveStick"><div class="knob"></div></div>
   <div class="stick" id="aimStick"><div class="knob"></div></div>
 </div>
+<div id="xhair"></div>
 <div id="logBtn">i</div>
 <div id="log"></div>
 <div id="msg"></div>
@@ -121,7 +126,7 @@
 <script>
 /* ================= CONFIG: edit these lines ================= */
 const CONFIG = {
-  keys: { up: 'w', left: 'a', down: 's', right: 'd', reload: 'r', ability: 'e' }, // ability 'e' is a placeholder
+  keys: { up: 'w', left: 'a', down: 's', right: 'd', reload: 'r', ability: 'f' }, // Raze 3 ability = F (Ctrl also works in the game)
   swapKeys: ['1','2','3','4','5','6','7','8','9'], // each tap sends the next one. Use ['q'] for the Q key instead.
   swapStartsOn: 1,        // weapon assumed equipped at launch (first tap sends the next number)
   moveDeadzone: 0.35,     // how far the left stick must move before a key is held
@@ -132,7 +137,8 @@ const CONFIG = {
     deadzone: 0.15,       // below this the stick is treated as centered
     fireAt: 0.6           // push the aim stick past this to hold fire
   },
-  mouseEvents: 'pointer'  // 'pointer', 'mouse' or 'both' (try 'both' if aiming doesn't register)
+  mouseEvents: 'both',    // 'pointer', 'mouse' or 'both'
+  showCrosshair: true     // red ring that shows where the right stick is aiming
 };
 /* ============================================================ */
 
@@ -166,8 +172,16 @@ function tap(name) {
   setTimeout(() => sendKey(name, false), 70);
 }
 
+let entered = false;
 function sendMouse(kind, x, y, buttons) {
   const t = target();
+  if (!entered) {
+    entered = true;
+    try { player && player.focus({ preventScroll: true }); } catch (e) {}
+    const o = { clientX: x, clientY: y, bubbles: true, composed: true };
+    ['pointerover', 'pointerenter'].forEach(n => t.dispatchEvent(new PointerEvent(n, { ...o, pointerId: 1, pointerType: 'mouse', isPrimary: true })));
+    ['mouseover', 'mouseenter'].forEach(n => t.dispatchEvent(new MouseEvent(n, o)));
+  }
   const base = { clientX: x, clientY: y, screenX: x, screenY: y, buttons, bubbles: true, cancelable: true, composed: true };
   const p = { move: 'pointermove', down: 'pointerdown', up: 'pointerup' }[kind];
   const m = { move: 'mousemove', down: 'mousedown', up: 'mouseup' }[kind];
@@ -194,11 +208,15 @@ function onMove(dx, dy) {
 }
 
 /* ---- aim: right stick -> virtual mouse, auto-fire when pushed far ---- */
+const xh = document.getElementById('xhair');
+function showCross(x, y) { if (CONFIG.showCrosshair) { xh.style.display = 'block'; xh.style.left = x + 'px'; xh.style.top = y + 'px'; } }
+function hideCross() { xh.style.display = 'none'; }
 let firing = false, lastX = 0, lastY = 0;
 function onAim(dx, dy) {
   const A = CONFIG.aim, mag = Math.hypot(dx, dy);
   if (mag < A.deadzone) {
     if (firing) { firing = false; sendMouse('up', lastX, lastY, 0); }
+    hideCross();
     return;
   }
   const r = (player || stage).getBoundingClientRect();
@@ -206,6 +224,7 @@ function onAim(dx, dy) {
   const x = r.left + r.width  * A.centerX + (dx / mag) * dist;
   const y = r.top  + r.height * A.centerY + (dy / mag) * dist;
   lastX = x; lastY = y;
+  showCross(x, y);
   sendMouse('move', x, y, firing ? 1 : 0);
   if (!firing && mag >= A.fireAt) {
     firing = true; sendMouse('down', x, y, 1);
