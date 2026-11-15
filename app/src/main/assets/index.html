@@ -127,7 +127,7 @@
 /* ================= CONFIG: edit these lines ================= */
 const CONFIG = {
   keys: { up: 'w', left: 'a', down: 's', right: 'd', reload: 'r', ability: 'f' }, // Raze 3 ability = F (Ctrl also works in the game)
-  swapKeys: ['1','2','3','4','5','6','7','8','9'], // each tap sends the next one. Use ['q'] for the Q key instead.
+  swapKeys: ['q'],        // Q = next available weapon (same as PC). For fixed number cycling use ['1','2','3','4','5','6','7','8','9']
   swapStartsOn: 1,        // weapon assumed equipped at launch (first tap sends the next number)
   moveDeadzone: 0.35,     // how far the left stick must move before a key is held
   aim: {
@@ -273,7 +273,7 @@ function makeButton(el, action) {
 
 let swapIdx = CONFIG.swapKeys.indexOf(String(CONFIG.swapStartsOn));
 const wnum = document.getElementById('wnum');
-function showWeapon() { wnum.textContent = swapIdx >= 0 ? CONFIG.swapKeys[swapIdx].toUpperCase() : '-'; }
+function showWeapon() { wnum.textContent = (swapIdx >= 0 ? CONFIG.swapKeys[swapIdx] : CONFIG.swapKeys[0]).toUpperCase(); }
 showWeapon();
 
 makeStick(document.getElementById('moveStick'), onMove);
