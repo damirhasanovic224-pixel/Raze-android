@@ -47,6 +47,7 @@ public class GameActivity extends Activity {
         agiDelayMs = getIntent().getIntExtra("agiDelay", 30) * 1000;
         String renderer = getIntent().getStringExtra("renderer");
         if (renderer == null) renderer = "auto";
+        boolean reset = getIntent().getBooleanExtra("reset", false);
         File swfDir = new File(getFilesDir(), "swf");
         swfDir.mkdirs();
 
@@ -83,7 +84,7 @@ public class GameActivity extends Activity {
         });
 
         setContentView(web);
-        web.loadUrl("https://appassets.androidplatform.net/assets/index.html?swf=/swf/raze" + slot + ".swf&renderer=" + renderer);
+        web.loadUrl("https://appassets.androidplatform.net/assets/index.html?swf=/swf/raze" + slot + ".swf&renderer=" + renderer + "&reset=" + (reset ? "1" : "0"));
     }
 
     /** Fetch outside URLs natively and add CORS headers so Ruffle is allowed to read them. */

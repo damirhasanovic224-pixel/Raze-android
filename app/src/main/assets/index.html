@@ -95,12 +95,25 @@
     const el = document.getElementById('log');
     if (el) el.textContent = LOG.map(l => (SEEN[l].n > 1 ? '[' + SEEN[l].n + 'x] ' : '') + l).join('\n');
   }
+  function resetRaze2Save() {
+    try {
+      const del = [], all = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k) { all.push(k); if (k.indexOf('Raze2_DFert') !== -1) del.push(k); }
+      }
+      del.forEach(k => localStorage.removeItem(k));
+      logLine('Raze 2 save cleared (' + del.length + ' keys)');
+      if (!del.length) logLine('stored keys: ' + (all.join(' | ') || 'none'));
+    } catch (e) { logLine('reset failed: ' + e.message); }
+  }
   const isCss = x => typeof x === 'string' && /^\s*(color|font|background)[a-z-]*\s*:/.test(x);
   if (DEBUG) {
     ['log', 'info', 'warn', 'error'].forEach(k => {
       const orig = console[k].bind(console);
       console[k] = (...a) => { orig(...a); logLine(k + ': ' + a.filter(x => !isCss(x)).map(x => (x && x.message) || x).join(' ')); };
     });
+    if (QS.get('reset') === '1') resetRaze2Save();
     window.addEventListener('error', e => logLine('ERR: ' + e.message));
     window.addEventListener('unhandledrejection', e => logLine('REJ: ' + (e.reason && e.reason.message || e.reason)));
   }

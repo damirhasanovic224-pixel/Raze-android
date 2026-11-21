@@ -25,6 +25,7 @@ public class MainActivity extends Activity {
     private static final int[] AGI_DELAYS = {0, 15, 30, 45};
     private Button rendererBtn;
     private Button agiBtn;
+    private Button resetBtn;
     private SharedPreferences prefs;
 
     private String renderer() { return prefs.getString("renderer", "auto"); }
@@ -65,6 +66,14 @@ public class MainActivity extends Activity {
             agiBtn.setText("Raze 2 login delay: " + next + "s");
         });
         root.addView(agiBtn);
+
+        resetBtn = new Button(this);
+        resetBtn.setText("Reset Raze 2 save (next launch)");
+        resetBtn.setOnClickListener(v -> {
+            prefs.edit().putBoolean("resetRaze2", true).apply();
+            Toast.makeText(this, "Raze 2 save will be cleared next time you open Raze 2", Toast.LENGTH_LONG).show();
+        });
+        root.addView(resetBtn);
 
         TextView hint = new TextView(this);
         hint.setText("Tap to play. On first run you pick the SWF file.\nLong-press to choose a different file.");
@@ -113,6 +122,9 @@ public class MainActivity extends Activity {
         i.putExtra("slot", slot);
         i.putExtra("renderer", renderer());
         i.putExtra("agiDelay", agiDelay());
+        boolean reset = slot == 2 && prefs.getBoolean("resetRaze2", false);
+        if (reset) prefs.edit().putBoolean("resetRaze2", false).apply();
+        i.putExtra("reset", reset);
         startActivity(i);
     }
 
