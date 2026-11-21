@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.WebResourceRequest;
@@ -26,6 +27,9 @@ import java.util.Map;
 
 public class GameActivity extends Activity {
     private WebView web;
+    private int slot = 2;
+    private long startMs;
+    private int agiDelayMs;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -38,7 +42,9 @@ public class GameActivity extends Activity {
             getWindow().setAttributes(lp);
         }
 
-        int slot = getIntent().getIntExtra("slot", 2);
+        slot = getIntent().getIntExtra("slot", 2);
+        startMs = SystemClock.elapsedRealtime();
+        agiDelayMs = getIntent().getIntExtra("agiDelay", 30) * 1000;
         String renderer = getIntent().getStringExtra("renderer");
         if (renderer == null) renderer = "auto";
         File swfDir = new File(getFilesDir(), "swf");
@@ -100,6 +106,16 @@ public class GameActivity extends Activity {
                         + "<data><status>0</status><errorcode>1</errorcode></data>";
                 return new WebResourceResponse("text/xml", "utf-8", 200, "OK", cors,
                         new ByteArrayInputStream(xml.getBytes("UTF-8")));
+            }
+            String path = req.getUrl().getPath();
+            if (slot == 2 && agiDelayMs > 0 && host != null && host.endsWith("armorgames.com")
+                    && path != null && path.toLowerCase().endsWith("/agi.swf")) {
+                // Raze 2 breaks if Armor Games' API file is ready before its menu is built,
+                // so hold that one file back for a while (the game does not wait for it).
+                long wait = startMs + agiDelayMs - SystemClock.elapsedRealtime();
+                if (wait > 0) {
+                    try { Thread.sleep(wait); } catch (InterruptedException ignored) { }
+                }
             }
             if (!"GET".equals(method)) return null; // POST bodies aren't visible here; let WebView handle it
             HttpURLConnection c = (HttpURLConnection) new URL(req.getUrl().toString()).openConnection();

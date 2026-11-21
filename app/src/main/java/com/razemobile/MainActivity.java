@@ -22,10 +22,13 @@ public class MainActivity extends Activity {
     private static final int PICK_SWF = 1;
     private int pendingSlot = 2;
     private static final String[] RENDERERS = {"auto", "webgl", "wgpu-webgl", "canvas"};
+    private static final int[] AGI_DELAYS = {0, 15, 30, 45};
     private Button rendererBtn;
+    private Button agiBtn;
     private SharedPreferences prefs;
 
     private String renderer() { return prefs.getString("renderer", "auto"); }
+    private int agiDelay() { return prefs.getInt("agiDelay", 30); }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,6 +53,18 @@ public class MainActivity extends Activity {
             rendererBtn.setText("Graphics: " + next);
         });
         root.addView(rendererBtn);
+
+        agiBtn = new Button(this);
+        agiBtn.setText("Raze 2 login delay: " + agiDelay() + "s");
+        agiBtn.setOnClickListener(v -> {
+            int cur = agiDelay(), next = AGI_DELAYS[0];
+            for (int i = 0; i < AGI_DELAYS.length; i++) {
+                if (AGI_DELAYS[i] == cur) { next = AGI_DELAYS[(i + 1) % AGI_DELAYS.length]; break; }
+            }
+            prefs.edit().putInt("agiDelay", next).apply();
+            agiBtn.setText("Raze 2 login delay: " + next + "s");
+        });
+        root.addView(agiBtn);
 
         TextView hint = new TextView(this);
         hint.setText("Tap to play. On first run you pick the SWF file.\nLong-press to choose a different file.");
@@ -97,6 +112,7 @@ public class MainActivity extends Activity {
         Intent i = new Intent(this, GameActivity.class);
         i.putExtra("slot", slot);
         i.putExtra("renderer", renderer());
+        i.putExtra("agiDelay", agiDelay());
         startActivity(i);
     }
 
